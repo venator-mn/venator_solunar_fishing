@@ -1,0 +1,37 @@
+Venator Solunar Fishing
+Copyright (c) 2026 [Your Full Name]
+All rights reserved.
+
+This repository and the website published from it, including the source code, visual design, graphics, and written content (together, the "Work"), are owned by the copyright holder named above. No license is granted to use the Work except as described below.
+
+PERMITTED USE
+
+You may visit and use the published website for your own personal, non-commercial purposes.
+
+NOT PERMITTED WITHOUT WRITTEN PERMISSION
+
+Unless the copyright holder gives you permission in writing, you may not:
+
+1. Copy, reproduce, or redistribute the Work, in whole or in part.
+2. Modify the Work or create derivative works based on it.
+3. Host, publish, or deploy the Work, or any modified version of it, on any other website, app, or service.
+4. Use the Work, the Venator Solunar Fishing name, or its design for any commercial purpose.
+5. Remove or change this notice.
+
+GITHUB FORKS
+
+Because this repository is public, GitHub's Terms of Service allow other GitHub users to view it and to fork it within GitHub. That permission exists only inside GitHub's service. It does not grant any right to use, modify, host, or distribute the Work anywhere else.
+
+THIRD-PARTY SERVICES AND FONTS
+
+The Work relies on outside services and fonts that are not owned by the copyright holder and are not covered by this notice. These include the Open-Meteo geocoding API, which uses location data from GeoNames, and the Barlow and Barlow Semi Condensed fonts served by Google Fonts. Each is subject to its own license and terms.
+
+The astronomical methods used to calculate the times, including those published by Jean Meeus, are general methods and are not claimed as property of the copyright holder. This notice covers the specific code, design, and content of the Work.
+
+NO WARRANTY
+
+The Work is provided "as is," without warranty of any kind. Solunar, sunrise, and sunset times are estimates intended for recreational use. The copyright holder is not liable for any claim, damages, or other liability arising from use of the Work.
+
+REQUESTING PERMISSION
+
+To ask about using the Work, contact the copyright holder through the GitHub account that owns this repository.
