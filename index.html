@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venator Solunar Fishing</title>
+<meta name="description" content="Moon major and minor feeding periods with sunrise and sunset for any town and date range.">
+<meta name="theme-color" content="#1b3025">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: dark;
+  --paper: #0f1814; --panel: #16211c; --ink: #e1e8df; --muted: #93a498; --line: #2b3a32;
+  --sky: #1b3025; --ridge: #142419; --pines: #09110d;
+  --sage: #8fbf98; --sage-ink: #0c1511; --sage-line: #3d5a46;
+  --lake: #5aaec2; --shallows: #3b7a86; --amber: #e3a456;
+  --night: #0a1210; --day: #2a3a31; --focus: #c4e6ca; --error: #ff9a8f;
+  --body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --head: "Barlow Semi Condensed", "Barlow", "Segoe UI", system-ui, sans-serif;
+  box-sizing: border-box;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { background: var(--paper); }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.5 var(--body); font-variant-numeric: tabular-nums; }
+a { color: var(--sage); }
+
+/* Header scene: night sky, tonight's moon, treeline, reflection on the water */
+.scene { position: relative; background: var(--sky); overflow: hidden; }
+.scene-inner { position: relative; z-index: 2; max-width: 980px; margin: 0 auto; padding: 2.6rem 1.25rem 0; }
+h1 { font-family: var(--head); font-weight: 700; font-size: clamp(2.3rem, 6vw, 3.5rem); line-height: 1; margin: 0 0 .55rem; letter-spacing: -.005em; color: #eef3ec; padding-right: 64px; }
+.lede { color: #b3c3b7; max-width: 52ch; margin: 0; padding-right: 64px; }
+.sky-moon { position: absolute; z-index: 1; top: 2.2rem; right: max(1.25rem, calc(50% - 490px + 1.25rem)); line-height: 0; filter: drop-shadow(0 0 16px rgba(241, 239, 228, .16)); }
+.treeline { position: relative; height: 96px; margin-top: .75rem; }
+.treeline svg, .water svg { position: absolute; left: 50%; width: 3200px; height: 96px; }
+.treeline svg { bottom: 0; transform: translateX(-50%); }
+.water { position: relative; height: 38px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 10%, transparent); mask-image: linear-gradient(#000 10%, transparent); }
+.water svg { top: -96px; transform: translateX(-50%) scaleY(-.5); transform-origin: 50% 100%; opacity: .9; }
+
+main { max-width: 980px; margin: 0 auto; padding: .25rem 1.25rem 4rem; }
+form { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem 2rem; padding: 0 0 1.5rem; border-bottom: 1px solid var(--line); }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { font-family: var(--head); font-weight: 600; font-size: 1.15rem; margin-bottom: .6rem; padding: 0; color: var(--ink); }
+.row { display: flex; gap: .75rem; }
+.row > label { flex: 1; min-width: 0; }
+label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: .6rem; }
+input { display: block; width: 100%; margin-top: .2rem; font: inherit; font-size: 1rem; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: .45rem .55rem; }
+input:hover { border-color: #3a4d42; }
+input::placeholder { color: #6c7e72; }
+input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+button { font: 600 1rem var(--body); border-radius: 4px; padding: .55rem 1rem; cursor: pointer; border: 1px solid var(--sage); }
+.primary { background: var(--sage); color: var(--sage-ink); }
+.primary:hover { background: #a3ceab; }
+.secondary { background: transparent; color: var(--sage); border-color: var(--sage-line); }
+.secondary:hover { background: rgba(143, 191, 152, .08); border-color: var(--sage); }
+.actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.status { color: var(--muted); font-size: .9rem; }
+.status.error { color: var(--error); }
+
+.where { font-size: .9rem; color: var(--muted); margin: -.15rem 0 .65rem; }
+.where strong { color: var(--ink); font-weight: 600; margin-right: .35rem; }
+.matches { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; font-size: .85rem; color: var(--muted); margin: 0 0 .7rem; }
+.matches[hidden] { display: none; }
+.matches button { font: 500 .85rem var(--body); padding: .25rem .55rem; background: transparent; color: var(--sage); border: 1px solid var(--line); }
+.matches button:hover { border-color: var(--sage-line); }
+.matches button[aria-pressed="true"] { background: rgba(143, 191, 152, .12); border-color: var(--sage); color: var(--ink); }
+details { margin-top: .1rem; }
+summary { color: var(--sage); cursor: pointer; font-size: .9rem; width: fit-content; }
+details[open] summary { margin-bottom: .7rem; }
+
+.key { display: flex; flex-wrap: wrap; gap: 1.25rem; font-size: .9rem; color: var(--muted); margin: 1.5rem 0 .5rem; }
+.key span { display: inline-flex; align-items: center; gap: .4rem; }
+.swatch { width: 1.4rem; height: .7rem; border-radius: 2px; display: inline-block; }
+.sw-major { background: var(--lake); } .sw-minor { background: var(--shallows); }
+.sw-sun { width: 3px; height: 1rem; background: var(--amber); }
+
+.day { padding: 1.4rem 0; border-bottom: 1px solid var(--line); }
+.day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.day h2 { font-family: var(--head); font-weight: 600; font-size: 1.5rem; margin: 0; }
+.phase { display: flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .95rem; }
+.phase svg { flex: none; }
+.bar-wrap { margin: .9rem 0 .4rem; }
+.bar { width: 100%; height: 56px; display: block; border-radius: 3px; }
+.hours { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); }
+.times { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: .7rem 1rem; margin: .9rem 0 0; }
+.times div { border-left: 3px solid var(--line); padding-left: .6rem; }
+.times .major { border-color: var(--lake); } .times .minor { border-color: var(--shallows); } .times .sun { border-color: var(--amber); }
+.times dt { font-size: .85rem; color: var(--muted); }
+.times dd { margin: 0; font-weight: 600; font-size: 1.1rem; }
+.times dd small { display: block; font-weight: 400; font-size: .8rem; color: var(--muted); }
+.note { margin: .8rem 0 0; font-size: .95rem; }
+.note strong { color: var(--amber); }
+.about { color: var(--muted); font-size: .9rem; max-width: 70ch; margin-top: 2.5rem; }
+
+@media (max-width: 560px) {
+  .scene-inner { padding-top: 1.8rem; }
+  .sky-moon { top: 1.4rem; }
+  h1, .lede { padding-right: 52px; }
+  h1 { font-size: 2.05rem; }
+}
+@media print {
+  :root { --paper: #fff; --panel: #fff; --ink: #000; --muted: #444; --line: #bbb; --lake: #1d5c70; --shallows: #8cbcc3; --amber: #c0782a; --night: #d6dcd8; --day: #fff; }
+  .scene { background: #fff; } h1 { color: #000; } .lede, .sky-moon, .treeline, .water { display: none; }
+  form, .actions, .about { display: none; }
+  body { font-size: 12px; }
+  .day { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<header class="scene">
+  <div class="scene-inner">
+    <h1>Venator Solunar Fishing</h1>
+    <p class="lede">Major and minor feeding periods from the moon, plus sunrise and sunset, for any town and date range.</p>
+  </div>
+  <div class="sky-moon" id="skyMoon" role="img"></div>
+  <div class="treeline" aria-hidden="true">
+    <svg viewBox="0 0 4000 120" preserveAspectRatio="none"><path id="ridgePath" fill="var(--ridge)"/><path id="pinePath" fill="var(--pines)"/><rect x="0" y="116" width="4000" height="4" fill="var(--pines)"/></svg>
+  </div>
+</header>
+<div class="water" aria-hidden="true">
+  <svg viewBox="0 0 4000 120" preserveAspectRatio="none"><path id="reflectPath" fill="#070d0a"/></svg>
+</div>
+<main>
+  <form id="f" novalidate>
+    <fieldset>
+      <legend>Location</legend>
+      <label>Town, city, or ZIP code<input id="place" type="text" value="Big Lake, MN" placeholder="Big Lake, MN" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="search"></label>
+      <p class="where" id="where" aria-live="polite"></p>
+      <div class="matches" id="matches" hidden></div>
+      <details id="coords">
+        <summary>Enter coordinates instead</summary>
+        <div class="row">
+          <label>Latitude<input id="lat" inputmode="decimal" value="45.332"></label>
+          <label>Longitude<input id="lon" inputmode="decimal" value="-93.746"></label>
+        </div>
+        <label>Time zone<input id="tz" list="tzlist" value="America/Chicago" autocomplete="off"></label>
+        <datalist id="tzlist"></datalist>
+      </details>
+    </fieldset>
+    <fieldset>
+      <legend>Dates</legend>
+      <label>Start date<input id="start" type="date"></label>
+      <label>End date<input id="end" type="date"></label>
+    </fieldset>
+    <fieldset>
+      <legend>Window length</legend>
+      <label>Major period, total hours<input id="majorH" inputmode="decimal" value="2"></label>
+      <label>Minor period, total hours<input id="minorH" inputmode="decimal" value="1"></label>
+    </fieldset>
+    <div class="actions">
+      <button class="primary" type="submit">Show times</button>
+      <button class="secondary" type="button" id="geo">Use my location</button>
+      <button class="secondary" type="button" id="csv">Download CSV</button>
+      <span class="status" id="status" role="status"></span>
+    </div>
+  </form>
+
+  <div class="key" aria-hidden="true">
+    <span><i class="swatch sw-major"></i>Major (moon overhead or underfoot)</span>
+    <span><i class="swatch sw-minor"></i>Minor (moonrise or moonset)</span>
+    <span><i class="swatch sw-sun"></i>Sunrise and sunset</span>
+  </div>
+  <div id="out"></div>
+
+  <p class="about">Major periods are centered on the moon's upper and lower transit, and minor periods on moonrise and moonset. Rise and set times use the standard upper-limb convention with atmospheric refraction, matching the U.S. Naval Observatory method, and typically land within a minute or two of published tables. A prime note appears when a period overlaps the hour on either side of sunrise or sunset. Location search is provided by <a href="https://open-meteo.com/">Open-Meteo</a> using <a href="https://www.geonames.org/">GeoNames</a> data, and all of the timing math runs in your browser. The page address updates with each search, so you can bookmark a spot.</p>
+</main>
+<script>
+// ---------- Astronomy (Meeus-based) ----------
+const RAD = Math.PI / 180, DEG = 180 / Math.PI;
+const norm360 = x => ((x % 360) + 360) % 360;
+const wrap180 = x => { x = norm360(x); return x > 180 ? x - 360 : x; };
+const DELTA_T_SEC = 69; // TT minus UT, close enough for this decade
+
+function jdFromMs(ms) { return ms / 86400000 + 2440587.5; }
+
+function sunPosition(jdUT) {
+  const T = (jdUT + DELTA_T_SEC / 86400 - 2451545) / 36525;
+  const L0 = 280.46646 + 36000.76983 * T;
+  const M = 357.52911 + 35999.05029 * T;
+  const e = 0.016708634 - 0.000042037 * T;
+  const C = (1.914602 - 0.004817 * T) * Math.sin(M * RAD) + 0.019993 * Math.sin(2 * M * RAD) + 0.000289 * Math.sin(3 * M * RAD);
+  const trueLon = L0 + C, v = M + C;
+  const R = 1.000001018 * (1 - e * e) / (1 + e * Math.cos(v * RAD));
+  const om = 125.04 - 1934.136 * T;
+  const lon = trueLon - 0.00569 - 0.00478 * Math.sin(om * RAD);
+  const eps = 23.439291 - 0.0130042 * T + 0.00256 * Math.cos(om * RAD);
+  const ra = Math.atan2(Math.cos(eps * RAD) * Math.sin(lon * RAD), Math.cos(lon * RAD)) * DEG;
+  const dec = Math.asin(Math.sin(eps * RAD) * Math.sin(lon * RAD)) * DEG;
+  return { ra: norm360(ra), dec, lon: norm360(lon), distKm: R * 149597870.7 };
+}
+
+// Meeus ch. 47, main periodic terms: [D, M, M', F, sumL (1e-6 deg), sumR (1e-3 km)]
+const MOON_LR = [
+  [0,0,1,0,6288774,-20905355],[2,0,-1,0,1274027,-3699111],[2,0,0,0,658314,-2955968],
+  [0,0,2,0,213618,-569925],[0,1,0,0,-185116,48888],[0,0,0,2,-114332,-3149],
+  [2,0,-2,0,58793,246158],[2,-1,-1,0,57066,-152138],[2,0,1,0,53322,-170733],
+  [2,-1,0,0,45758,-204586],[0,1,-1,0,-40923,-129620],[1,0,0,0,-34720,108743],
+  [0,1,1,0,-30383,104755],[2,0,0,-2,15327,10321],[0,0,1,2,-12528,0],
+  [0,0,1,-2,10980,79661],[4,0,-1,0,10675,-34782],[0,0,3,0,10034,-23210],
+  [4,0,-2,0,8548,-21636],[2,1,-1,0,-7888,24208],[2,1,0,0,-6766,30824],
+  [1,0,-1,0,-5163,-8379],[1,1,0,0,4987,-16675],[2,-1,1,0,4036,-12831],
+  [2,0,2,0,3994,-10445],[4,0,0,0,3861,-11650],[2,0,-3,0,3665,14403],
+  [0,1,-2,0,-2689,-7003],[2,0,-1,2,-2602,0],[2,-1,-2,0,2390,10056],
+  [1,0,1,0,-2348,6322],[2,-2,0,0,2236,-9884],[0,1,2,0,-2120,5751],
+  [0,2,0,0,-2069,0],[2,-2,-1,0,2048,-4950],[2,0,1,-2,-1773,4130],
+  [2,0,0,2,-1595,0],[4,-1,-1,0,1215,-3958],[0,0,2,2,-1110,0],[3,0,-1,0,-892,3258]
+];
+const MOON_B = [
+  [0,0,0,1,5128122],[0,0,1,1,280602],[0,0,1,-1,277693],[2,0,0,-1,173237],
+  [2,0,-1,1,55413],[2,0,-1,-1,46271],[2,0,0,1,32573],[0,0,2,1,17198],
+  [2,0,1,-1,9266],[0,0,2,-1,8822],[2,-1,0,-1,8216],[2,0,-2,-1,4324],
+  [2,0,1,1,4200],[2,1,0,-1,-3359],[2,-1,-1,1,2463],[2,-1,0,1,2211],
+  [2,-1,-1,-1,2065],[0,1,-1,-1,-1870],[4,0,-1,-1,1828],[0,1,0,1,-1794]
+];
+
+function moonPosition(jdUT) {
+  const T = (jdUT + DELTA_T_SEC / 86400 - 2451545) / 36525;
+  const Lp = norm360(218.3164477 + 481267.88123421 * T);
+  const D = norm360(297.8501921 + 445267.1114034 * T);
+  const M = norm360(357.5291092 + 35999.0502909 * T);
+  const Mp = norm360(134.9633964 + 477198.8675055 * T);
+  const F = norm360(93.2720950 + 483202.0175233 * T);
+  const A1 = 119.75 + 131.849 * T, A2 = 53.09 + 479264.290 * T, A3 = 313.45 + 481266.484 * T;
+  const E = 1 - 0.002516 * T - 0.0000074 * T * T;
+  let sl = 0, sr = 0, sb = 0;
+  for (const [d, m, mp, f, l, r] of MOON_LR) {
+    const arg = (d * D + m * M + mp * Mp + f * F) * RAD;
+    const ef = Math.pow(E, Math.abs(m));
+    sl += l * ef * Math.sin(arg); sr += r * ef * Math.cos(arg);
+  }
+  for (const [d, m, mp, f, b] of MOON_B) {
+    sb += b * Math.pow(E, Math.abs(m)) * Math.sin((d * D + m * M + mp * Mp + f * F) * RAD);
+  }
+  sl += 3958 * Math.sin(A1 * RAD) + 1962 * Math.sin((Lp - F) * RAD) + 318 * Math.sin(A2 * RAD);
+  sb += -2235 * Math.sin(Lp * RAD) + 382 * Math.sin(A3 * RAD) + 175 * Math.sin((A1 - F) * RAD)
+      + 175 * Math.sin((A1 + F) * RAD) + 127 * Math.sin((Lp - Mp) * RAD) - 115 * Math.sin((Lp + Mp) * RAD);
+  const om = 125.04452 - 1934.136261 * T;
+  const dpsi = (-17.2 * Math.sin(om * RAD) - 1.32 * Math.sin(2 * 280.4665 * RAD + 2 * 36000.7698 * T * RAD)) / 3600;
+  const lon = norm360(Lp + sl / 1e6 + dpsi), lat = sb / 1e6, distKm = 385000.56 + sr / 1000;
+  const eps = 23.439291 - 0.0130042 * T + (9.2 * Math.cos(om * RAD)) / 3600;
+  const sL = Math.sin(lon * RAD), cL = Math.cos(lon * RAD), sB = Math.sin(lat * RAD), cB = Math.cos(lat * RAD);
+  const sE = Math.sin(eps * RAD), cE = Math.cos(eps * RAD);
+  const ra = norm360(Math.atan2(sL * cE - (sB / cB) * sE, cL) * DEG);
+  const dec = Math.asin(sB * cE + cB * sE * sL) * DEG;
+  return { ra, dec, lon, lat, distKm };
+}
+
+function siderealDeg(jdUT, lonDeg) {
+  const d = jdUT - 2451545, T = d / 36525;
+  return norm360(280.46061837 + 360.98564736629 * d + 0.000387933 * T * T + lonDeg);
+}
+
+function altitude(pos, jdUT, latDeg, lonDeg) {
+  const H = (siderealDeg(jdUT, lonDeg) - pos.ra) * RAD;
+  const phi = latDeg * RAD, dec = pos.dec * RAD;
+  return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)) * DEG;
+}
+function hourAngle(pos, jdUT, lonDeg) { return wrap180(siderealDeg(jdUT, lonDeg) - pos.ra); }
+
+// Horizon functions. Sun: upper limb + refraction. Moon: center with parallax, semidiameter, refraction.
+function sunHorizon(ms, lat, lon) { const jd = jdFromMs(ms); return altitude(sunPosition(jd), jd, lat, lon) + 0.8333; }
+function moonHorizon(ms, lat, lon) {
+  const jd = jdFromMs(ms), p = moonPosition(jd);
+  const parallax = Math.asin(6378.14 / p.distKm) * DEG;
+  return altitude(p, jd, lat, lon) - (0.7275 * parallax - 0.5667);
+}
+
+function bisect(fn, a, b, fa) {
+  for (let i = 0; i < 30; i++) {
+    const m = (a + b) / 2, fm = fn(m);
+    if ((fm > 0) === (fa > 0)) { a = m; fa = fm; } else { b = m; }
+  }
+  return (a + b) / 2;
+}
+
+// Scan [start, end) in 10-minute steps and return crossings of fn through zero.
+function findCrossings(fn, start, end, guard) {
+  const step = 10 * 60000, out = [];
+  let t0 = start, f0 = fn(t0);
+  while (t0 < end) {
+    const t1 = Math.min(t0 + step, end), f1 = fn(t1);
+    if ((f0 <= 0 && f1 > 0) || (f0 > 0 && f1 <= 0)) {
+      if (!guard || guard(f0, f1)) {
+        const t = bisect(fn, t0, t1, f0);
+        out.push({ time: t, rising: f1 > f0 });
+      }
+    }
+    t0 = t1; f0 = f1;
+  }
+  return out;
+}
+
+function moonIllumination(ms) {
+  const jd = jdFromMs(ms), m = moonPosition(jd), s = sunPosition(jd);
+  const cosPsi = Math.cos(m.lat * RAD) * Math.cos((m.lon - s.lon) * RAD);
+  const psi = Math.acos(cosPsi);
+  const i = Math.atan2(s.distKm * Math.sin(psi), m.distKm - s.distKm * cosPsi);
+  const fraction = (1 + Math.cos(i)) / 2;
+  const elong = norm360(m.lon - s.lon);
+  return { fraction, waxing: elong < 180, elong };
+}
+
+function phaseName(ill) {
+  const e = ill.elong;
+  if (e < 6 || e > 354) return "New moon";
+  if (Math.abs(e - 90) < 6) return "First quarter";
+  if (Math.abs(e - 180) < 6) return "Full moon";
+  if (Math.abs(e - 270) < 6) return "Last quarter";
+  if (e < 90) return "Waxing crescent";
+  if (e < 180) return "Waxing gibbous";
+  if (e < 270) return "Waning gibbous";
+  return "Waning crescent";
+}
+
+function computeDay(dayStart, dayEnd, lat, lon) {
+  const sunX = findCrossings(t => sunHorizon(t, lat, lon), dayStart, dayEnd);
+  const moonX = findCrossings(t => moonHorizon(t, lat, lon), dayStart, dayEnd);
+  const small = (a, b) => Math.abs(a) < 90 && Math.abs(b) < 90;
+  const haFn = t => { const jd = jdFromMs(t); return hourAngle(moonPosition(jd), jd, lon); };
+  const upper = findCrossings(haFn, dayStart, dayEnd, small).filter(c => c.rising);
+  const lower = findCrossings(t => wrap180(haFn(t) - 180), dayStart, dayEnd, small).filter(c => c.rising);
+  return {
+    sunrise: sunX.filter(c => c.rising).map(c => c.time),
+    sunset: sunX.filter(c => !c.rising).map(c => c.time),
+    moonrise: moonX.filter(c => c.rising).map(c => c.time),
+    moonset: moonX.filter(c => !c.rising).map(c => c.time),
+    overhead: upper.map(c => c.time),
+    underfoot: lower.map(c => c.time),
+    illum: moonIllumination((dayStart + dayEnd) / 2)
+  };
+}
+
+// ---------- Time zone helpers ----------
+function tzOffsetMs(ms, tz) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(new Date(ms));
+  const g = k => +parts.find(p => p.type === k).value;
+  const asUTC = Date.UTC(g("year"), g("month") - 1, g("day"), g("hour") % 24, g("minute"), g("second"));
+  return asUTC - Math.floor(ms / 1000) * 1000;
+}
+function localMidnightMs(y, m, d, tz) {
+  const guess = Date.UTC(y, m - 1, d);
+  let t = guess - tzOffsetMs(guess, tz);
+  t = guess - tzOffsetMs(t, tz);
+  return t;
+}
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+let lastRows = [];
+let place = { query: "Big Lake, MN", label: "Big Lake, Minnesota" };
+let lookupSeq = 0;
+const norm = s => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
+
+function isoLocal(ms, tz) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms));
+}
+function fmtTime(ms, tz) {
+  return new Date(ms).toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
+}
+function fmtDate(y, m, d) {
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long", month: "long", day: "numeric", year: "numeric" });
+}
+function tzName(tz) {
+  try {
+    const n = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "longGeneric" }).formatToParts(new Date()).find(p => p.type === "timeZoneName");
+    if (n) return n.value;
+  } catch {}
+  return tz;
+}
+
+function moonSvg(ill, size = 28) {
+  // Lit portion of the disc. Terminator is an ellipse with x-radius r*|cos(elongation)|.
+  const c = size / 2, r = c - 1, k = ill.fraction, e = ill.elong * Math.PI / 180;
+  const rx = Math.abs(Math.cos(e)) * r;
+  const litRight = ill.waxing; // northern hemisphere view
+  const outer = litRight ? 1 : 0;
+  const inner = k > 0.5 ? (litRight ? 1 : 0) : (litRight ? 0 : 1);
+  const path = `M${c},${c - r} A${r},${r} 0 0,${outer} ${c},${c + r} A${rx},${r} 0 0,${inner} ${c},${c - r}Z`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
+    <circle cx="${c}" cy="${c}" r="${r}" fill="var(--night)"/>
+    <path d="${path}" fill="#f1efe4"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="var(--line)"/></svg>`;
+}
+
+function barSvg(r, dayStart, dayEnd, majorMs, minorMs) {
+  const W = 1000, H = 56, len = dayEnd - dayStart;
+  const x = t => Math.max(0, Math.min(W, (t - dayStart) / len * W));
+  let s = `<svg class="bar" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="24 hour timeline">`;
+  s += `<rect x="0" y="0" width="${W}" height="${H}" fill="var(--night)"/>`;
+  const rise = r.sunrise[0], set = r.sunset[0];
+  if (rise !== undefined || set !== undefined) {
+    const a = rise !== undefined ? x(rise) : 0, b = set !== undefined ? x(set) : W;
+    s += `<rect x="${a}" y="0" width="${Math.max(0, b - a)}" height="${H}" fill="var(--day)"/>`;
+  }
+  const block = (t, half, fill, y, h) => `<rect x="${x(t - half)}" y="${y}" width="${x(t + half) - x(t - half)}" height="${h}" rx="2" fill="${fill}" stroke="var(--paper)" stroke-width="2"/>`;
+  [...r.moonrise, ...r.moonset].forEach(t => s += block(t, minorMs / 2, "var(--shallows)", 16, 24));
+  [...r.overhead, ...r.underfoot].forEach(t => s += block(t, majorMs / 2, "var(--lake)", 8, 40));
+  [rise, set].forEach(t => { if (t !== undefined) s += `<rect x="${x(t) - 2}" y="0" width="4" height="${H}" fill="var(--amber)"/>`; });
+  for (let h = 6; h < 24; h += 6) s += `<rect x="${h / 24 * W - .5}" y="${H - 6}" width="1" height="6" fill="var(--muted)"/>`;
+  return s + `</svg>`;
+}
+
+function windowText(t, halfMs, tz) {
+  return `${fmtTime(t - halfMs, tz)} to ${fmtTime(t + halfMs, tz)}`;
+}
+
+function primeNotes(r, majorMs, minorMs, tz) {
+  const notes = [], light = [];
+  if (r.sunrise[0] !== undefined) light.push(["sunrise", r.sunrise[0]]);
+  if (r.sunset[0] !== undefined) light.push(["sunset", r.sunset[0]]);
+  const periods = [
+    ...r.overhead.map(t => ["major", t, majorMs]), ...r.underfoot.map(t => ["major", t, majorMs]),
+    ...r.moonrise.map(t => ["minor", t, minorMs]), ...r.moonset.map(t => ["minor", t, minorMs])
+  ];
+  const hour = 3600000;
+  for (const [kind, t, len] of periods) {
+    for (const [lname, lt] of light) {
+      if (t - len / 2 < lt + hour && t + len / 2 > lt - hour) {
+        notes.push(`<strong>Prime:</strong> the ${kind} period (${windowText(t, len / 2, tz)}) overlaps ${lname} at ${fmtTime(lt, tz)}.`);
+      }
+    }
+  }
+  return notes;
+}
+
+// ---------- Location search (Open-Meteo geocoding) ----------
+function placeLabel(r, withCounty) {
+  const parts = [r.name];
+  if (withCounty && r.admin2 && r.admin2 !== r.name) parts.push(r.admin2);
+  if (r.admin1 && r.admin1 !== r.name) parts.push(r.admin1);
+  if (r.country_code !== "US" && r.country) parts.push(r.country);
+  return parts.join(", ");
+}
+
+function showWhere() {
+  const w = $("where"); w.textContent = "";
+  const lat = parseFloat($("lat").value), lon = parseFloat($("lon").value);
+  if (!isFinite(lat) || !isFinite(lon)) return;
+  const b = document.createElement("strong");
+  b.textContent = place.label || "Custom coordinates";
+  const s = document.createElement("span");
+  s.textContent = `${lat.toFixed(3)}, ${lon.toFixed(3)}, ${tzName($("tz").value.trim())}`;
+  w.append(b, s);
+}
+
+function applyPlace(r, query, label) {
+  $("lat").value = r.latitude.toFixed(4);
+  $("lon").value = r.longitude.toFixed(4);
+  $("tz").value = r.timezone;
+  place = { query, label };
+  showWhere();
+}
+
+function renderMatches(list, labels, chosen) {
+  const box = $("matches"); box.textContent = "";
+  if (list.length < 2) { box.hidden = true; return; }
+  const lead = document.createElement("span");
+  lead.textContent = "Matches:";
+  const btns = list.slice(0, 6).map((r, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = labels[i];
+    b.setAttribute("aria-pressed", String(i === chosen));
+    b.addEventListener("click", () => {
+      applyPlace(r, labels[i], labels[i]);
+      $("place").value = labels[i];
+      btns.forEach((x, j) => x.setAttribute("aria-pressed", String(j === i)));
+      run();
+    });
+    return b;
+  });
+  box.append(lead, ...btns);
+  box.hidden = false;
+}
+
+async function geocode(name, countryCode) {
+  const q = new URLSearchParams({ name, count: "10", language: "en", format: "json" });
+  if (countryCode) q.set("countryCode", countryCode);
+  const res = await fetch("https://geocoding-api.open-meteo.com/v1/search?" + q.toString());
+  if (!res.ok) throw new Error(`Location search returned ${res.status}`);
+  const data = await res.json();
+  return (data.results || []).filter(r => isFinite(r.latitude) && isFinite(r.longitude) && r.timezone);
+}
+
+async function lookUp(text) {
+  const seq = ++lookupSeq;
+  const status = $("status");
+  status.className = "status"; status.textContent = `Looking up ${text}...`;
+  const zip = text.match(/^\s*(\d{5})(?:-\d{4})?\s*$/);
+  let list;
+  try {
+    list = zip ? await geocode(zip[1], "US") : await geocode(text);
+    if (zip && !list.length) list = await geocode(zip[1]);
+  } catch {
+    if (seq !== lookupSeq) return false;
+    status.className = "status error";
+    status.textContent = "Couldn't reach the location search. Check your connection, or use Enter coordinates instead.";
+    return false;
+  }
+  if (seq !== lookupSeq) return false;
+  if (!list.length) {
+    status.className = "status error";
+    status.textContent = `No match for "${text}". Try a town with its state, like Big Lake, MN, or a ZIP code.`;
+    $("matches").hidden = true;
+    return false;
+  }
+  const base = list.map(r => placeLabel(r, false));
+  const labels = list.map((r, i) => base.filter(x => x === base[i]).length > 1 ? placeLabel(r, true) : base[i]);
+  applyPlace(list[0], text, labels[0]);
+  renderMatches(list, labels, 0);
+  return true;
+}
+
+async function submit() {
+  const text = $("place").value.trim();
+  if (text && norm(text) !== norm(place.query)) {
+    if (!(await lookUp(text))) return;
+  }
+  run();
+}
+
+// ---------- Header scene ----------
+function mulberry32(a) {
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function treeline(seed, W, H, minH, maxH, minGap, maxGap) {
+  const rnd = mulberry32(seed), f = v => v.toFixed(1);
+  let d = "", x = -30;
+  while (x < W + 30) {
+    let h = minH + rnd() * (maxH - minH);
+    if (rnd() < 0.07) h *= 1.25;
+    const w = h * (0.19 + rnd() * 0.07), n = 4 + Math.floor(rnd() * 2), top = H - h;
+    const side = [];
+    for (let i = 1; i <= n; i++) {
+      const y = top + h * (i / n) * 0.92, a = w * i / n;
+      side.push([a, y]);
+      if (i < n) side.push([a * 0.4, y - h / n * 0.08]);
+    }
+    side.push([w * 0.1, H]);
+    d += `M${f(x)},${f(top)}` + side.map(([a, y]) => `L${f(x + a)},${f(y)}`).join("")
+       + side.slice().reverse().map(([a, y]) => `L${f(x - a)},${f(y)}`).join("") + "Z";
+    x += minGap + rnd() * (maxGap - minGap);
+  }
+  return d;
+}
+function drawScene() {
+  const pines = treeline(19, 4000, 120, 34, 88, 11, 27);
+  $("ridgePath").setAttribute("d", treeline(7, 4000, 120, 52, 104, 16, 34));
+  $("pinePath").setAttribute("d", pines);
+  $("reflectPath").setAttribute("d", pines);
+  const ill = moonIllumination(Date.now());
+  const sky = $("skyMoon");
+  sky.innerHTML = moonSvg(ill, 46);
+  sky.setAttribute("aria-label", `Moon right now: ${phaseName(ill)}, ${Math.round(ill.fraction * 100)}% lit`);
+}
+
+// ---------- Main calculation ----------
+function parseNum(id, min, max, message) {
+  const v = parseFloat($(id).value);
+  if (!isFinite(v) || v < min || v > max) throw new Error(message);
+  return v;
+}
+
+function run() {
+  const status = $("status"); status.className = "status"; status.textContent = "";
+  let lat, lon, majorH, minorH, tz;
+  try {
+    lat = parseNum("lat", -66, 66, "Latitude must be between -66 and 66. Places closer to the poles aren't supported.");
+    lon = parseNum("lon", -180, 180, "Longitude must be a number between -180 and 180.");
+    majorH = parseNum("majorH", 0.25, 6, "Major period length must be between 0.25 and 6 hours.");
+    minorH = parseNum("minorH", 0.25, 6, "Minor period length must be between 0.25 and 6 hours.");
+    tz = $("tz").value.trim();
+    try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); } catch { throw new Error(`"${tz}" is not a recognized time zone. Pick one from the list, like America/Chicago.`); }
+    if (!$("start").value) throw new Error("Pick a start date.");
+    if (!$("end").value) $("end").value = $("start").value;
+  } catch (err) { status.className = "status error"; status.textContent = err.message; return; }
+
+  const [sy, sm, sd] = $("start").value.split("-").map(Number);
+  const [ey, em, ed] = $("end").value.split("-").map(Number);
+  const startUTC = Date.UTC(sy, sm - 1, sd), endUTC = Date.UTC(ey, em - 1, ed);
+  const nDays = Math.round((endUTC - startUTC) / 86400000) + 1;
+  if (nDays < 1) { status.className = "status error"; status.textContent = "End date is before the start date."; return; }
+  if (nDays > 93) { status.className = "status error"; status.textContent = "Choose a range of 93 days or fewer."; return; }
+
+  const majorMs = majorH * 3600000, minorMs = minorH * 3600000;
+  let html = ""; lastRows = [];
+  for (let i = 0; i < nDays; i++) {
+    const d = new Date(startUTC + i * 86400000);
+    const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, dd = d.getUTCDate();
+    const n = new Date(startUTC + (i + 1) * 86400000);
+    const ds = localMidnightMs(y, m, dd, tz), de = localMidnightMs(n.getUTCFullYear(), n.getUTCMonth() + 1, n.getUTCDate(), tz);
+    const r = computeDay(ds, de, lat, lon);
+    const pct = Math.round(r.illum.fraction * 100);
+    const t = (arr, cls, label, half) => {
+      const val = arr.length ? arr.map(x => fmtTime(x, tz)).join(", ") : "None today";
+      const sub = half && arr.length ? arr.map(x => `<small>${windowText(x, half, tz)}</small>`).join("") : "";
+      return `<div class="${cls}"><dt>${label}</dt><dd>${val}${sub}</dd></div>`;
+    };
+    const notes = primeNotes(r, majorMs, minorMs, tz);
+    html += `<section class="day">
+      <div class="day-head"><h2>${fmtDate(y, m, dd)}</h2>
+        <div class="phase">${moonSvg(r.illum)}<span>${phaseName(r.illum)}, ${pct}% lit</span></div></div>
+      <div class="bar-wrap">${barSvg(r, ds, de, majorMs, minorMs)}
+        <div class="hours" aria-hidden="true"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div></div>
+      <dl class="times">
+        ${t(r.sunrise, "sun", "Sunrise")}${t(r.sunset, "sun", "Sunset")}
+        ${t(r.underfoot, "major", "Major, moon underfoot", majorMs / 2)}${t(r.overhead, "major", "Major, moon overhead", majorMs / 2)}
+        ${t(r.moonrise, "minor", "Minor, moonrise", minorMs / 2)}${t(r.moonset, "minor", "Minor, moonset", minorMs / 2)}
+      </dl>
+      ${notes.map(x => `<p class="note">${x}</p>`).join("")}
+    </section>`;
+    const j = a => a.map(x => fmtTime(x, tz)).join(" / ");
+    lastRows.push([`${y}-${String(m).padStart(2, "0")}-${String(dd).padStart(2, "0")}`, j(r.sunrise), j(r.sunset),
+      j(r.underfoot), j(r.overhead), j(r.moonrise), j(r.moonset), phaseName(r.illum), pct]);
+  }
+  $("out").innerHTML = html;
+  showWhere();
+  status.textContent = `Showing ${nDays} day${nDays > 1 ? "s" : ""}.`;
+
+  const q = new URLSearchParams();
+  if (place.query) q.set("place", place.query);
+  if (place.label) q.set("label", place.label);
+  [["lat", "lat"], ["lon", "lon"], ["tz", "tz"], ["start", "start"], ["end", "end"], ["majorH", "major"], ["minorH", "minor"]]
+    .forEach(([id, k]) => q.set(k, id === "tz" ? tz : $(id).value));
+  try { history.replaceState(null, "", "?" + q.toString()); } catch {}
+}
+
+function downloadCsv() {
+  if (!lastRows.length) { $("status").textContent = "Show times first, then download."; return; }
+  const head = ["Date", "Sunrise", "Sunset", "Major underfoot", "Major overhead", "Minor moonrise", "Minor moonset", "Phase", "Percent lit"];
+  const csv = [head, ...lastRows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = `solunar-${lastRows[0][0]}-to-${lastRows[lastRows.length - 1][0]}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+(function init() {
+  try { $("tzlist").innerHTML = Intl.supportedValuesOf("timeZone").map(z => `<option value="${z}">`).join(""); } catch {}
+  const q = new URLSearchParams(location.search);
+  const hasCoords = q.get("lat") && q.get("lon");
+  if (hasCoords) {
+    $("lat").value = q.get("lat"); $("lon").value = q.get("lon");
+    if (q.get("tz")) $("tz").value = q.get("tz");
+    place = { query: q.get("place") || "", label: q.get("label") || "Saved spot" };
+    $("place").value = place.query;
+  }
+  if (q.get("major")) $("majorH").value = q.get("major");
+  if (q.get("minor")) $("minorH").value = q.get("minor");
+  const tz = $("tz").value;
+  $("start").value = q.get("start") || isoLocal(Date.now(), tz);
+  $("end").value = q.get("end") || isoLocal(Date.now() + 6 * 86400000, tz);
+
+  $("f").addEventListener("submit", e => { e.preventDefault(); submit(); });
+  $("csv").addEventListener("click", downloadCsv);
+  ["lat", "lon"].forEach(id => $(id).addEventListener("input", () => {
+    $("place").value = ""; place = { query: "", label: "Custom coordinates" };
+    $("matches").hidden = true; showWhere();
+  }));
+  $("tz").addEventListener("change", showWhere);
+  $("geo").addEventListener("click", () => {
+    if (!navigator.geolocation) { $("status").textContent = "This browser doesn't share location. Type a town or ZIP code instead."; return; }
+    $("status").className = "status"; $("status").textContent = "Getting your location...";
+    navigator.geolocation.getCurrentPosition(p => {
+      $("lat").value = p.coords.latitude.toFixed(4); $("lon").value = p.coords.longitude.toFixed(4);
+      try { $("tz").value = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+      $("place").value = ""; place = { query: "", label: "Your location" }; $("matches").hidden = true;
+      run();
+    }, () => { $("status").className = "status error"; $("status").textContent = "Location access was blocked. Type a town or ZIP code instead."; });
+  });
+
+  drawScene();
+  if (!hasCoords && q.get("place")) { $("place").value = q.get("place"); place = { query: "", label: "" }; submit(); }
+  else run();
+})();
+</script>
+</body>
+</html>
